@@ -1,0 +1,24 @@
+name: math-dataset
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10,<3.13
+  - datasets=2.14.0
+  - pandas=2.2.0
+  - numpy=1.26.0
+  - sympy=1.12
+  - pillow=10.2.0
+  - requests-oauthlib=1.3.1
+  - openai=1.0.0
+  - python-dotenv=1.0.1
+  - gradio=4.13.0
+  - colorlog=6.9.0
+  - colorama=0.4.6
+  - pip
+  - pip:
+    - math-verify==0.6.0
+    - unsloth==2025.3.19
+    - tabulate==0.9.0
+    - -e ./camel
+
