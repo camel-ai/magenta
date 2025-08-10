@@ -1,0 +1,399 @@
+Metadata-Version: 2.4
+Name: math_reasoning_lib
+Version: 0.1.0
+Summary: 统一的数学推理库，支持不同benchmark的端到端处理
+Author: Math Reasoning Team
+Author-email: team@mathlib.com
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: dataclasses; python_version < "3.7"
+Provides-Extra: dev
+Requires-Dist: pytest>=6.0; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
+Requires-Dist: flake8; extra == "dev"
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: provides-extra
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# Math Reasoning Library
+
+## 🎯 项目概述
+
+这是一个统一的数学推理库，将原有的magenta项目重构为模块化的library，支持不同benchmark走同一个pipeline，大大减少重复性工作。
+
+### 核心特性
+
+- 🔄 **统一管道**: 四阶段工作流（数据生成 → 增强 → 训练 → 评估）
+- 📊 **多Benchmark支持**: MATH、GSM8K、AIME等，易于扩展
+- 🛠️ **模块化设计**: 组件独立，便于维护和扩展
+- ⚙️ **灵活配置**: 支持YAML/JSON配置文件和代码配置
+- 🔌 **插件系统**: 动态注册benchmark、模型、工具包
+- 📈 **并行处理**: 支持多实验并行执行
+
+## 🏗️ 架构设计
+
+```
+math_reasoning_lib/
+├── core/                          # 核心管道
+│   ├── pipeline.py               # 主管道类
+│   ├── config.py                 # 配置管理
+│   └── base_classes.py           # 抽象基类
+├── benchmarks/                    # 基准测试
+│   ├── registry.py               # 注册器
+│   ├── math_benchmark.py         # MATH数据集
+│   └── gsm8k_benchmark.py        # GSM8K数据集
+├── models/                        # 模型管理
+├── toolkits/                     # 工具包
+├── agents/                        # 智能代理
+├── enhancement/                   # 数据增强
+├── training/                      # 训练模块
+├── evaluation/                    # 评估模块
+└── examples/                      # 使用示例
+```
+
+## 🚀 快速开始
+
+### 安装
+
+```bash
+pip install -e .
+```
+
+### 基础使用
+
+```python
+from math_reasoning_lib.core.pipeline import MathReasoningPipeline
+from math_reasoning_lib.core.config import PipelineConfig, get_benchmark_config
+
+# 1. 创建配置
+config = PipelineConfig.from_dict(get_benchmark_config("math"))
+config.openai_api_key = "your-api-key"
+
+# 2. 创建管道
+pipeline = MathReasoningPipeline(config)
+
+# 3. 运行完整管道
+results = pipeline.run_full_pipeline(
+    benchmark="math",
+    base_model="gpt-4o-mini",
+    num_problems=100,
+    toolkits=["sympy", "code_execution"]
+)
+
+# 4. 查看结果
+for result in results:
+    print(f"{result.stage}: {result.success_rate:.2%}")
+```
+
+## 📋 使用示例
+
+### 1. 单阶段运行
+
+```python
+# 只运行数据生成
+result = pipeline.run_data_generation(
+    benchmark="gsm8k",
+    model="gpt-4o-mini",
+    num_problems=50,
+    toolkits=["code_execution"]
+)
+```
+
+### 2. 多Benchmark比较
+
+```python
+benchmarks = ["math", "gsm8k"]
+models = ["gpt-4o-mini", "gpt-3.5-turbo"]
+
+for benchmark in benchmarks:
+    for model in models:
+        config = PipelineConfig.from_dict(get_benchmark_config(benchmark))
+        pipeline = MathReasoningPipeline(config)
+        
+        result = pipeline.run_data_generation(
+            benchmark=benchmark,
+            model=model,
+            num_problems=20
+        )
+        print(f"{benchmark}-{model}: {result.success_rate:.2%}")
+```
+
+### 3. 自定义配置
+
+```python
+custom_config = {
+    "solver": {
+        "max_iterations": 20,
+        "timeout": 900,
+        "retry_attempts": 5
+    },
+    "training": {
+        "epochs": 5,
+        "batch_size": 2,
+        "rank": 128
+    }
+}
+
+config = PipelineConfig.from_dict(custom_config)
+pipeline = MathReasoningPipeline(config)
+```
+
+### 4. 配置文件
+
+```yaml
+# config.yaml
+solver:
+  max_iterations: 15
+  timeout: 600
+  multi_step: true
+
+enhancement:
+  max_retries: 3
+  cot_generation: true
+
+training:
+  epochs: 3
+  batch_size: 4
+  rank: 64
+
+openai_api_key: "your-api-key"
+```
+
+```python
+config = PipelineConfig.from_file("config.yaml")
+pipeline = MathReasoningPipeline(config)
+```
+
+## 🔧 自定义Benchmark
+
+### 1. 创建Benchmark类
+
+```python
+from math_reasoning_lib.core.base_classes import BaseBenchmark, MathProblem
+
+class CustomBenchmark(BaseBenchmark):
+    def load_problems(self, num_problems=100, **kwargs):
+        # 实现问题加载逻辑
+        return problems
+    
+    def load_test_problems(self, num_problems=100, **kwargs):
+        # 实现测试问题加载逻辑
+        return test_problems
+    
+    def evaluate_solution(self, problem, solution):
+        # 实现解答评估逻辑
+        return {"correct": True, "score": 1.0}
+    
+    def get_metrics(self, evaluation_results):
+        # 实现指标计算逻辑
+        return {"accuracy": 0.85}
+```
+
+### 2. 注册和使用
+
+```python
+from math_reasoning_lib.benchmarks.registry import register_benchmark
+
+# 注册自定义benchmark
+register_benchmark("custom", CustomBenchmark)
+
+# 使用自定义benchmark
+pipeline = MathReasoningPipeline(config)
+result = pipeline.run_data_generation(
+    benchmark="custom",
+    model="gpt-4o-mini",
+    num_problems=50
+)
+```
+
+## 📊 支持的Benchmark
+
+| Benchmark | 描述 | 配置模板 |
+|-----------|------|----------|
+| MATH | 高中数学竞赛题 | `get_benchmark_config("math")` |
+| GSM8K | 小学数学应用题 | `get_benchmark_config("gsm8k")` |
+| AIME | 美国数学邀请赛 | `get_benchmark_config("aime")` |
+| Custom | 自定义benchmark | 需要实现BaseBenchmark |
+
+## 🛠️ 支持的工具包
+
+- **SymPy Toolkit**: 符号数学计算
+- **Code Execution**: 代码执行和计算
+- **Geometry Toolkit**: 几何问题求解
+- **Custom Toolkits**: 自定义工具包
+
+## 🎛️ 配置选项
+
+### 求解器配置
+```python
+solver_config = {
+    "max_iterations": 10,      # 最大迭代次数
+    "timeout": 300,            # 超时时间(秒)
+    "multi_step": True,        # 多步对话
+    "enable_verification": True, # 启用验证
+    "retry_attempts": 3        # 重试次数
+}
+```
+
+### 增强配置
+```python
+enhancement_config = {
+    "max_retries": 3,          # 最大重试次数
+    "enable_verification": True, # 启用验证
+    "cot_generation": True,    # 生成CoT推理
+    "temperature": 0.1         # 生成温度
+}
+```
+
+### 训练配置
+```python
+training_config = {
+    "epochs": 3,               # 训练轮数
+    "batch_size": 4,           # 批次大小
+    "learning_rate": 2e-4,     # 学习率
+    "rank": 64,                # LoRA rank
+    "max_seq_length": 4096     # 最大序列长度
+}
+```
+
+## 🔄 四阶段工作流
+
+### 阶段1: 数据生成 (TIR轨迹)
+```python
+result = pipeline.run_data_generation(
+    benchmark="math",
+    model="gpt-4o-mini",
+    num_problems=100,
+    toolkits=["sympy", "code_execution"]
+)
+```
+
+### 阶段2: 数据增强 (Back-Translation)
+```python
+result = pipeline.run_enhancement(
+    benchmark="math",
+    enhancement_model="gpt-4o-mini"
+)
+```
+
+### 阶段3: 模型训练 (SFT)
+```python
+result = pipeline.run_training(
+    base_model="Qwen/Qwen2.5-7B-Instruct",
+    benchmark="math",
+    training_config={"epochs": 3, "rank": 64}
+)
+```
+
+### 阶段4: 模型评估
+```python
+result = pipeline.run_evaluation(
+    model_path="outputs/math_model",
+    benchmark="math",
+    num_problems=100
+)
+```
+
+## 📈 性能监控
+
+### 查看结果
+```python
+# 获取所有结果
+results = pipeline.get_results()
+
+# 保存结果到文件
+pipeline.save_results("experiment_results.json")
+
+# 打印结果摘要
+for result in results:
+    print(f"阶段: {result.stage}")
+    print(f"成功率: {result.success_rate:.2%}")
+    print(f"指标: {result.metrics}")
+```
+
+### 结果格式
+```json
+{
+  "stage": "data_generation",
+  "benchmark": "math",
+  "model": "gpt-4o-mini",
+  "num_problems": 100,
+  "success_rate": 0.85,
+  "metrics": {
+    "solutions_generated": 85,
+    "average_time": 45.2
+  },
+  "errors": []
+}
+```
+
+## 🔗 并行处理
+
+```python
+import concurrent.futures
+
+def run_experiment(benchmark, model):
+    config = PipelineConfig.from_dict(get_benchmark_config(benchmark))
+    pipeline = MathReasoningPipeline(config)
+    return pipeline.run_data_generation(
+        benchmark=benchmark,
+        model=model,
+        num_problems=50
+    )
+
+# 并行执行多个实验
+experiments = [("math", "gpt-4o-mini"), ("gsm8k", "gpt-4o-mini")]
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+    futures = [
+        executor.submit(run_experiment, benchmark, model) 
+        for benchmark, model in experiments
+    ]
+    
+    for future in concurrent.futures.as_completed(futures):
+        result = future.result()
+        print(f"实验完成: {result.success_rate:.2%}")
+```
+
+## 📚 更多示例
+
+- `examples/basic_usage.py` - 基础使用示例
+- `examples/custom_benchmark.py` - 自定义benchmark示例
+- `examples/advanced_pipeline.py` - 高级管道使用
+
+## 🤝 贡献指南
+
+1. **添加新Benchmark**: 继承`BaseBenchmark`类
+2. **添加新模型**: 继承`BaseModel`类  
+3. **添加新工具包**: 继承`BaseToolkit`类
+4. **提交PR**: 包含测试和文档
+
+## 📄 许可证
+
+本项目采用Apache 2.0许可证。
+
+## 🆘 支持
+
+如有问题，请：
+1. 查看examples/目录下的示例
+2. 查看API文档
+3. 提交GitHub Issue 
