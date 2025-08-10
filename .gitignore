@@ -9,6 +9,9 @@ loong_output
 long.py
 *loong*
 old_experimental_files
+.env
+.env.*
+*.secret.*
 
 # Local files
 **/local_*
