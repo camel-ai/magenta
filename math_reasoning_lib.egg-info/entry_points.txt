@@ -1,0 +1,2 @@
+[console_scripts]
+math-reasoning = math_reasoning_lib.examples.basic_usage:main

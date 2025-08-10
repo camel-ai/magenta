@@ -1,0 +1,50 @@
+anthropic_api_key: null
+cache_dir: cache
+database:
+  database: math_reasoning
+  file_path: math_reasoning.db
+  host: localhost
+  password: null
+  port: 5432
+  type: sqlite
+  username: null
+enhancement:
+  back_translation: true
+  cot_generation: true
+  enable_verification: true
+  max_retries: 3
+  temperature: 0.1
+evaluation:
+  batch_size: 1
+  enable_detailed_metrics: true
+  max_new_tokens: 1024
+  temperature: 0.0
+  timeout: 300
+logging:
+  backup_count: 5
+  file_path: null
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+  max_file_size: 10485760
+mistral_api_key: null
+openai_api_key: ${OPENAI_API_KEY}
+output_dir: custom_outputs
+solver:
+  enable_verification: true
+  max_iterations: 15
+  multi_step: true
+  retry_attempts: 3
+  timeout: 600
+training:
+  batch_size: 4
+  epochs: 3
+  eval_steps: 100
+  fp16: true
+  gradient_checkpointing: true
+  learning_rate: 0.0002
+  lora_alpha: 16
+  lora_dropout: 0.0
+  max_seq_length: 4096
+  rank: 64
+  save_steps: 500
+  warmup_steps: 100
